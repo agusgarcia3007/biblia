@@ -5,8 +5,15 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { VerseCard } from '@/components/verse-card'
 import { StreakBadge } from '@/components/streak-badge'
-import { MessageSquare, Heart, BookOpen, User } from 'lucide-react'
+import { MessageSquare, Heart, BookOpen, User, Phone, Settings, LogOut } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface VerseOfDay {
   verse: {
@@ -112,11 +119,28 @@ export default function Home() {
           <h1 className="text-2xl font-bold text-primary">Biblia Católica AI</h1>
           <div className="flex items-center gap-4">
             {streak && <StreakBadge streak={streak.current_streak} />}
-            <Link href="/auth">
-              <Button variant="ghost" size="icon">
-                <User className="h-5 w-5" />
-              </Button>
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <User className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link href="/settings" className="flex items-center gap-2 cursor-pointer">
+                    <Settings className="h-4 w-4" />
+                    <span>Configuración</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/auth" className="flex items-center gap-2 cursor-pointer">
+                    <LogOut className="h-4 w-4" />
+                    <span>Cerrar sesión</span>
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
@@ -164,6 +188,17 @@ export default function Home() {
                   <span>Chatear con la Biblia</span>
                 </Button>
               </Link>
+              <Link href="/talk">
+                <Button
+                  variant="outline"
+                  className="w-full h-24 flex-col gap-2 relative overflow-hidden border-primary/50 hover:border-primary transition-all duration-300 group"
+                  size="lg"
+                >
+                  <div className="absolute inset-0 bg-gradient-radial from-primary/20 via-accent/10 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
+                  <Phone className="h-6 w-6 relative z-10 group-hover:scale-110 transition-transform duration-300" />
+                  <span className="relative z-10 font-semibold">Hablar con un Santo</span>
+                </Button>
+              </Link>
               <Link href="/prayer">
                 <Button variant="outline" className="w-full h-24 flex-col gap-2" size="lg">
                   <Heart className="h-6 w-6" />
@@ -174,12 +209,6 @@ export default function Home() {
                 <Button variant="outline" className="w-full h-24 flex-col gap-2" size="lg">
                   <BookOpen className="h-6 w-6" />
                   <span>Mi Diario Espiritual</span>
-                </Button>
-              </Link>
-              <Link href="/settings">
-                <Button variant="outline" className="w-full h-24 flex-col gap-2" size="lg">
-                  <User className="h-6 w-6" />
-                  <span>Configuración</span>
                 </Button>
               </Link>
             </div>
