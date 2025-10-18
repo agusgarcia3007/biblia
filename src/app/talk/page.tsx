@@ -4,7 +4,7 @@ import { useConversation } from '@elevenlabs/react'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { PersonaSelect } from '@/components/persona-select'
+import { SaintPicker } from '@/components/saint-picker'
 import { Badge } from '@/components/ui/badge'
 import { Phone, PhoneOff, Home, Mic, MicOff } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -113,7 +113,7 @@ export default function TalkPage() {
                 <CardDescription>Elige con quién deseas conversar</CardDescription>
               </CardHeader>
               <CardContent>
-                <PersonaSelect value={personaKey} onValueChange={setPersonaKey} label="" />
+                <SaintPicker value={personaKey} onValueChange={setPersonaKey} label="" />
               </CardContent>
             </Card>
           )}
