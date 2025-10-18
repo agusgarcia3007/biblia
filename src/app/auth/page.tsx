@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
+import { restoreSavedState } from '@/lib/auth-utils'
 
 export default function AuthPage() {
   const router = useRouter()
@@ -19,6 +20,16 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [redirectPath, setRedirectPath] = useState<string | null>(null)
+
+  useEffect(() => {
+    // Verificar si hay un estado guardado para mostrar mensaje al usuario
+    const savedState = restoreSavedState()
+    if (savedState) {
+      setRedirectPath(savedState.path)
+      setMessage(`Por favor inicia sesión para continuar. Serás redirigido a ${savedState.path}`)
+    }
+  }, [])
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -59,7 +70,8 @@ export default function AuthPage() {
       if (error) throw error
 
       if (data?.user) {
-        router.push('/')
+        // Redirigir a la ruta guardada o a la home
+        router.push(redirectPath || '/')
       }
     } catch (err: any) {
       setError(err.message || 'Error al iniciar sesión')
@@ -76,7 +88,7 @@ export default function AuthPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: `${window.location.origin}${redirectPath || '/'}`,
         },
       })
 

@@ -5,8 +5,10 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { VerseCard } from '@/components/verse-card'
 import { StreakBadge } from '@/components/streak-badge'
+import { ShareImage } from '@/components/share-image'
 import { MessageSquare, Heart, BookOpen, User, Phone, Settings, LogOut } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { toPng } from 'html-to-image'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { handleUnauthorized } from '@/lib/auth-utils'
 
 interface VerseOfDay {
   verse: {
@@ -76,7 +79,7 @@ export default function Home() {
     if (!verseOfDay) return
 
     try {
-      await fetch('/api/journal', {
+      const response = await fetch('/api/journal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -88,6 +91,16 @@ export default function Home() {
           },
         }),
       })
+
+      if (response.status === 401) {
+        handleUnauthorized(router, '/')
+        return
+      }
+
+      if (!response.ok) {
+        throw new Error('Error al guardar')
+      }
+
       alert('Versículo guardado en tu diario')
     } catch (error) {
       console.error('Error saving verse:', error)
@@ -95,19 +108,84 @@ export default function Home() {
     }
   }
 
-  const handleShareVerse = () => {
+  const handleShareVerse = async () => {
     if (!verseOfDay) return
 
-    const shareText = `"${verseOfDay.verse.text}"\n\n${verseOfDay.verse.reference}\n\n${verseOfDay.reflection}`
+    try {
+      // Create a temporary container for the ShareImage component
+      const container = document.createElement('div')
+      container.style.position = 'absolute'
+      container.style.left = '-9999px'
+      container.style.top = '0'
+      document.body.appendChild(container)
 
-    if (navigator.share) {
-      navigator.share({
-        title: 'Versículo del Día',
-        text: shareText,
+      // Render the ShareImage component
+      const root = await import('react-dom/client').then(m => m.createRoot(container))
+      await new Promise<void>((resolve) => {
+        root.render(
+          <ShareImage
+            type="verse"
+            content={{
+              title: verseOfDay.verse.reference,
+              text: verseOfDay.verse.text,
+              subtitle: verseOfDay.reflection.length > 200
+                ? verseOfDay.reflection.substring(0, 200) + '...'
+                : verseOfDay.reflection,
+            }}
+            streak={streak?.current_streak}
+          />
+        )
+        // Wait for render
+        setTimeout(resolve, 500)
       })
-    } else {
-      navigator.clipboard.writeText(shareText)
-      alert('Versículo copiado al portapapeles')
+
+      // Generate image
+      const element = container.querySelector('#share-image') as HTMLElement
+      if (!element) throw new Error('Element not found')
+
+      const dataUrl = await toPng(element, {
+        width: 1080,
+        height: 1920,
+        pixelRatio: 2,
+        cacheBust: true,
+      })
+
+      // Cleanup immediately after generating
+      root.unmount()
+      document.body.removeChild(container)
+
+      // Convert to blob
+      const response = await fetch(dataUrl)
+      const blob = await response.blob()
+      const file = new File([blob], 'versiculo.png', { type: 'image/png' })
+
+      // Share or download
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          title: 'Versículo del Día',
+          text: `${verseOfDay.verse.reference}`,
+          files: [file],
+        })
+      } else {
+        // Fallback: download the image
+        const link = document.createElement('a')
+        link.download = 'versiculo.png'
+        link.href = dataUrl
+        link.click()
+      }
+    } catch (error) {
+      console.error('Error sharing verse:', error)
+      // Fallback to text sharing
+      const shareText = `"${verseOfDay.verse.text}"\n\n${verseOfDay.verse.reference}\n\n${verseOfDay.reflection}`
+      if (navigator.share) {
+        navigator.share({
+          title: 'Versículo del Día',
+          text: shareText,
+        })
+      } else {
+        navigator.clipboard.writeText(shareText)
+        alert('Versículo copiado al portapapeles')
+      }
     }
   }
 

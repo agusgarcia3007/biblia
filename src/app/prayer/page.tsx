@@ -1,15 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PersonaSelect } from '@/components/persona-select'
+import { ShareImage } from '@/components/share-image'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Heart, Home, Loader2, Bookmark, Copy, Share2, Volume2, Pause } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { DEFAULT_PERSONA_KEY } from '@/lib/personas'
+import { toPng } from 'html-to-image'
+import { handleUnauthorized, restoreSavedState, clearSavedState } from '@/lib/auth-utils'
 
 const PRAYER_INTENTS = [
   { key: 'gratitud', label: 'Gratitud' },
@@ -31,6 +34,11 @@ interface PrayerResponse {
   intentTag: string
 }
 
+interface Streak {
+  current_streak: number
+  last_active_date: string
+}
+
 export default function PrayerPage() {
   const router = useRouter()
   const [personaKey, setPersonaKey] = useState(DEFAULT_PERSONA_KEY)
@@ -43,6 +51,33 @@ export default function PrayerPage() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null)
   const [isLoadingAudio, setIsLoadingAudio] = useState(false)
+  const [streak, setStreak] = useState<Streak | null>(null)
+
+  useEffect(() => {
+    // Restaurar estado si existe
+    const savedState = restoreSavedState()
+    if (savedState?.path === '/prayer' && savedState.formData) {
+      const { personaKey: savedPersona, selectedIntent: savedIntent, userContext: savedContext, generatedPrayer: savedPrayer } = savedState.formData
+      if (savedPersona) setPersonaKey(savedPersona)
+      if (savedIntent) setSelectedIntent(savedIntent)
+      if (savedContext) setUserContext(savedContext)
+      if (savedPrayer) setGeneratedPrayer(savedPrayer)
+      clearSavedState()
+    }
+
+    async function fetchStreak() {
+      try {
+        const streakRes = await fetch('/api/streak')
+        if (streakRes.ok) {
+          const streakData = await streakRes.json()
+          setStreak(streakData)
+        }
+      } catch (error) {
+        console.error('Error fetching streak:', error)
+      }
+    }
+    fetchStreak()
+  }, [])
 
   const handleGeneratePrayer = async () => {
     if (!selectedIntent) {
@@ -64,6 +99,15 @@ export default function PrayerPage() {
         }),
       })
 
+      if (response.status === 401) {
+        handleUnauthorized(router, '/prayer', {
+          personaKey,
+          selectedIntent,
+          userContext,
+        })
+        return
+      }
+
       if (!response.ok) {
         throw new Error('Error al generar oración')
       }
@@ -82,7 +126,7 @@ export default function PrayerPage() {
     if (!generatedPrayer) return
 
     try {
-      await fetch('/api/journal', {
+      const response = await fetch('/api/journal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -95,6 +139,21 @@ export default function PrayerPage() {
           },
         }),
       })
+
+      if (response.status === 401) {
+        handleUnauthorized(router, '/prayer', {
+          personaKey,
+          selectedIntent,
+          userContext,
+          generatedPrayer,
+        })
+        return
+      }
+
+      if (!response.ok) {
+        throw new Error('Error al guardar')
+      }
+
       alert('Oración guardada en tu diario')
     } catch (err) {
       console.error('Error saving prayer:', err)
@@ -102,17 +161,90 @@ export default function PrayerPage() {
     }
   }
 
-  const handleSharePrayer = () => {
+  const handleSharePrayer = async () => {
     if (!generatedPrayer) return
 
-    if (navigator.share) {
-      navigator.share({
-        title: 'Mi Oración',
-        text: generatedPrayer.prayer,
+    try {
+      // Create a temporary container for the ShareImage component
+      const container = document.createElement('div')
+      container.style.position = 'absolute'
+      container.style.left = '-9999px'
+      container.style.top = '0'
+      document.body.appendChild(container)
+
+      // Get persona display name
+      const personaName = personaKey === 'augustin'
+        ? 'San Agustín'
+        : personaKey === 'teresa_avila'
+          ? 'Santa Teresa de Ávila'
+          : 'San Francisco de Asís'
+
+      // Render the ShareImage component
+      const root = await import('react-dom/client').then(m => m.createRoot(container))
+      await new Promise<void>((resolve) => {
+        root.render(
+          <ShareImage
+            type="prayer"
+            content={{
+              title: PRAYER_INTENTS.find((i) => i.key === generatedPrayer.intentTag)?.label || 'Mi Oración',
+              text: generatedPrayer.prayer.length > 400
+                ? generatedPrayer.prayer.substring(0, 400) + '...'
+                : generatedPrayer.prayer,
+              subtitle: `Al estilo de ${personaName}`,
+            }}
+            streak={streak?.current_streak}
+          />
+        )
+        // Wait for render
+        setTimeout(resolve, 500)
       })
-    } else {
-      navigator.clipboard.writeText(generatedPrayer.prayer)
-      alert('Oración copiada al portapapeles')
+
+      // Generate image
+      const element = container.querySelector('#share-image') as HTMLElement
+      if (!element) throw new Error('Element not found')
+
+      const dataUrl = await toPng(element, {
+        width: 1080,
+        height: 1920,
+        pixelRatio: 2,
+        cacheBust: true,
+      })
+
+      // Cleanup immediately after generating
+      root.unmount()
+      document.body.removeChild(container)
+
+      // Convert to blob
+      const response = await fetch(dataUrl)
+      const blob = await response.blob()
+      const file = new File([blob], 'oracion.png', { type: 'image/png' })
+
+      // Share or download
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          title: 'Mi Oración',
+          text: PRAYER_INTENTS.find((i) => i.key === generatedPrayer.intentTag)?.label || 'Mi Oración',
+          files: [file],
+        })
+      } else {
+        // Fallback: download the image
+        const link = document.createElement('a')
+        link.download = 'oracion.png'
+        link.href = dataUrl
+        link.click()
+      }
+    } catch (error) {
+      console.error('Error sharing prayer:', error)
+      // Fallback to text sharing
+      if (navigator.share) {
+        navigator.share({
+          title: 'Mi Oración',
+          text: generatedPrayer.prayer,
+        })
+      } else {
+        navigator.clipboard.writeText(generatedPrayer.prayer)
+        alert('Oración copiada al portapapeles')
+      }
     }
   }
 
