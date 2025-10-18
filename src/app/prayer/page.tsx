@@ -217,17 +217,52 @@ export default function PrayerPage() {
       // Convert to blob
       const response = await fetch(dataUrl)
       const blob = await response.blob()
-      const file = new File([blob], 'oracion.png', { type: 'image/png' })
 
-      // Share or download
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({
-          title: 'Mi Oración',
-          text: PRAYER_INTENTS.find((i) => i.key === generatedPrayer.intentTag)?.label || 'Mi Oración',
-          files: [file],
-        })
+      // Try to share
+      if (navigator.share) {
+        try {
+          // Create File object with timestamp to ensure uniqueness
+          const timestamp = Date.now()
+          const file = new File([blob], `oracion-${timestamp}.png`, {
+            type: 'image/png',
+            lastModified: timestamp,
+          })
+
+          // Check if we can share files
+          const canShareFiles = navigator.canShare && navigator.canShare({ files: [file] })
+
+          if (canShareFiles) {
+            await navigator.share({
+              files: [file],
+              title: 'Mi Oración',
+              text: PRAYER_INTENTS.find((i) => i.key === generatedPrayer.intentTag)?.label || 'Mi Oración',
+            })
+          } else {
+            // Mobile fallback: download the image automatically
+            const link = document.createElement('a')
+            link.download = `oracion-${timestamp}.png`
+            link.href = dataUrl
+            link.click()
+
+            // Then share text to allow user to attach the downloaded image
+            setTimeout(() => {
+              navigator.share({
+                title: 'Mi Oración',
+                text: `${PRAYER_INTENTS.find((i) => i.key === generatedPrayer.intentTag)?.label || 'Mi Oración'}\n\nHe descargado la imagen, adjúntala desde tu galería.`,
+              }).catch(() => {})
+            }, 500)
+          }
+        } catch (shareError: any) {
+          if (shareError.name !== 'AbortError') {
+            // Fallback: download
+            const link = document.createElement('a')
+            link.download = 'oracion.png'
+            link.href = dataUrl
+            link.click()
+          }
+        }
       } else {
-        // Fallback: download the image
+        // Desktop fallback: download the image
         const link = document.createElement('a')
         link.download = 'oracion.png'
         link.href = dataUrl

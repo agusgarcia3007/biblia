@@ -168,17 +168,52 @@ export default function Home() {
       // Convert to blob
       const response = await fetch(dataUrl);
       const blob = await response.blob();
-      const file = new File([blob], "versiculo.png", { type: "image/png" });
 
-      // Share or download
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({
-          title: "Versículo del Día",
-          text: `${verseOfDay.verse.reference}`,
-          files: [file],
-        });
+      // Try to share
+      if (navigator.share) {
+        try {
+          // Create File object with timestamp to ensure uniqueness
+          const timestamp = Date.now();
+          const file = new File([blob], `versiculo-${timestamp}.png`, {
+            type: "image/png",
+            lastModified: timestamp,
+          });
+
+          // Check if we can share files
+          const canShareFiles = navigator.canShare && navigator.canShare({ files: [file] });
+
+          if (canShareFiles) {
+            await navigator.share({
+              files: [file],
+              title: "Versículo del Día",
+              text: `${verseOfDay.verse.reference}`,
+            });
+          } else {
+            // Mobile fallback: download the image automatically
+            const link = document.createElement("a");
+            link.download = `versiculo-${timestamp}.png`;
+            link.href = dataUrl;
+            link.click();
+
+            // Then share text to allow user to attach the downloaded image
+            setTimeout(() => {
+              navigator.share({
+                title: "Versículo del Día",
+                text: `${verseOfDay.verse.reference}\n\nHe descargado la imagen, adjúntala desde tu galería.`,
+              }).catch(() => {});
+            }, 500);
+          }
+        } catch (shareError: any) {
+          if (shareError.name !== 'AbortError') {
+            // Fallback: download
+            const link = document.createElement("a");
+            link.download = "versiculo.png";
+            link.href = dataUrl;
+            link.click();
+          }
+        }
       } else {
-        // Fallback: download the image
+        // Desktop fallback: download the image
         const link = document.createElement("a");
         link.download = "versiculo.png";
         link.href = dataUrl;
