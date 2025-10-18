@@ -1,122 +1,134 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { VerseCard } from '@/components/verse-card'
-import { StreakBadge } from '@/components/streak-badge'
-import { MessageSquare, Heart, BookOpen, User, Phone, Settings, LogOut } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { VerseCard } from "@/components/verse-card";
+import { StreakBadge } from "@/components/streak-badge";
+import {
+  MessageSquare,
+  Heart,
+  BookOpen,
+  User,
+  Phone,
+  Settings,
+  LogOut,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 
 interface VerseOfDay {
   verse: {
-    id: string
-    book: string
-    chapter: number
-    verse: number
-    text: string
-    reference: string
-    is_deuterocanon: boolean
-  }
-  reflection: string
-  date: string
+    id: string;
+    book: string;
+    chapter: number;
+    verse: number;
+    text: string;
+    reference: string;
+    is_deuterocanon: boolean;
+  };
+  reflection: string;
+  date: string;
 }
 
 interface Streak {
-  current_streak: number
-  last_active_date: string
+  current_streak: number;
+  last_active_date: string;
 }
 
 export default function Home() {
-  const router = useRouter()
-  const [verseOfDay, setVerseOfDay] = useState<VerseOfDay | null>(null)
-  const [streak, setStreak] = useState<Streak | null>(null)
-  const [loading, setLoading] = useState(true)
+  const router = useRouter();
+  const [verseOfDay, setVerseOfDay] = useState<VerseOfDay | null>(null);
+  const [streak, setStreak] = useState<Streak | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
       try {
         // Fetch verse of the day
-        const verseRes = await fetch('/api/verse-of-day')
+        const verseRes = await fetch("/api/verse-of-day");
         if (verseRes.ok) {
-          const verseData = await verseRes.json()
-          setVerseOfDay(verseData)
+          const verseData = await verseRes.json();
+          setVerseOfDay(verseData);
         }
 
         // Fetch streak (if authenticated)
-        const streakRes = await fetch('/api/streak')
+        const streakRes = await fetch("/api/streak");
         if (streakRes.ok) {
-          const streakData = await streakRes.json()
-          setStreak(streakData)
+          const streakData = await streakRes.json();
+          setStreak(streakData);
+          setIsAuthenticated(true);
 
           // Update streak if not active today
-          const today = new Date().toISOString().split('T')[0]
+          const today = new Date().toISOString().split("T")[0];
           if (streakData.last_active_date !== today) {
-            await fetch('/api/streak', { method: 'POST' })
+            await fetch("/api/streak", { method: "POST" });
           }
         }
       } catch (error) {
-        console.error('Error fetching data:', error)
+        console.error("Error fetching data:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
 
-    fetchData()
-  }, [])
+    fetchData();
+  }, []);
 
   const handleSaveVerse = async () => {
-    if (!verseOfDay) return
+    if (!verseOfDay) return;
 
     try {
-      await fetch('/api/journal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      await fetch("/api/journal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          type: 'verse',
+          type: "verse",
           payload: {
             verse: verseOfDay.verse,
             reflection: verseOfDay.reflection,
             date: verseOfDay.date,
           },
         }),
-      })
-      alert('Versículo guardado en tu diario')
+      });
+      alert("Versículo guardado en tu diario");
     } catch (error) {
-      console.error('Error saving verse:', error)
-      alert('Error al guardar versículo')
+      console.error("Error saving verse:", error);
+      alert("Error al guardar versículo");
     }
-  }
+  };
 
   const handleShareVerse = () => {
-    if (!verseOfDay) return
+    if (!verseOfDay) return;
 
-    const shareText = `"${verseOfDay.verse.text}"\n\n${verseOfDay.verse.reference}\n\n${verseOfDay.reflection}`
+    const shareText = `"${verseOfDay.verse.text}"\n\n${verseOfDay.verse.reference}\n\n${verseOfDay.reflection}`;
 
     if (navigator.share) {
       navigator.share({
-        title: 'Versículo del Día',
+        title: "Versículo del Día",
         text: shareText,
-      })
+      });
     } else {
-      navigator.clipboard.writeText(shareText)
-      alert('Versículo copiado al portapapeles')
+      navigator.clipboard.writeText(shareText);
+      alert("Versículo copiado al portapapeles");
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
       {/* Header */}
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-primary">Biblia Católica AI</h1>
+          <h1 className="text-2xl font-bold text-primary">
+            Biblia Católica AI
+          </h1>
           <div className="flex items-center gap-4">
             {streak && <StreakBadge streak={streak.current_streak} />}
             <DropdownMenu>
@@ -127,14 +139,29 @@ export default function Home() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link href="/settings" className="flex items-center gap-2 cursor-pointer">
+                  <Link
+                    href="/profile"
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <User className="h-4 w-4" />
+                    <span>Mi Perfil</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link
+                    href="/settings"
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
                     <Settings className="h-4 w-4" />
                     <span>Configuración</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/auth" className="flex items-center gap-2 cursor-pointer">
+                  <Link
+                    href="/auth"
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
                     <LogOut className="h-4 w-4" />
                     <span>Cerrar sesión</span>
                   </Link>
@@ -152,7 +179,8 @@ export default function Home() {
           <section className="text-center space-y-2">
             <h2 className="text-3xl font-bold tracking-tight">Bienvenido</h2>
             <p className="text-muted-foreground">
-              Explora la Palabra de Dios con la ayuda de la inteligencia artificial
+              Explora la Palabra de Dios con la ayuda de la inteligencia
+              artificial
             </p>
           </section>
 
@@ -183,7 +211,11 @@ export default function Home() {
             <h3 className="text-xl font-semibold">Acciones Rápidas</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Link href="/chat">
-                <Button variant="outline" className="w-full h-24 flex-col gap-2" size="lg">
+                <Button
+                  variant="outline"
+                  className="w-full h-24 flex-col gap-2"
+                  size="lg"
+                >
                   <MessageSquare className="h-6 w-6" />
                   <span>Chatear con la Biblia</span>
                 </Button>
@@ -196,17 +228,27 @@ export default function Home() {
                 >
                   <div className="absolute inset-0 bg-gradient-radial from-primary/20 via-accent/10 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
                   <Phone className="h-6 w-6 relative z-10 group-hover:scale-110 transition-transform duration-300" />
-                  <span className="relative z-10 font-semibold">Hablar con un Santo</span>
+                  <span className="relative z-10 font-semibold">
+                    Hablar con un Santo
+                  </span>
                 </Button>
               </Link>
               <Link href="/prayer">
-                <Button variant="outline" className="w-full h-24 flex-col gap-2" size="lg">
+                <Button
+                  variant="outline"
+                  className="w-full h-24 flex-col gap-2"
+                  size="lg"
+                >
                   <Heart className="h-6 w-6" />
                   <span>Orar Conmigo</span>
                 </Button>
               </Link>
               <Link href="/journal">
-                <Button variant="outline" className="w-full h-24 flex-col gap-2" size="lg">
+                <Button
+                  variant="outline"
+                  className="w-full h-24 flex-col gap-2"
+                  size="lg"
+                >
                   <BookOpen className="h-6 w-6" />
                   <span>Mi Diario Espiritual</span>
                 </Button>
@@ -220,9 +262,11 @@ export default function Home() {
       <footer className="border-t mt-12 py-6">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
           <p>© 2025 Biblia Católica AI. Todos los derechos reservados.</p>
-          <p className="mt-1">Basado en la Biblia Católica en español (dominio público)</p>
+          <p className="mt-1">
+            Basado en la Biblia Católica en español (dominio público)
+          </p>
         </div>
       </footer>
     </div>
-  )
+  );
 }
