@@ -3,28 +3,13 @@ import { streamText } from 'ai'
 import { createClient } from '@/lib/supabase/server'
 import { getPersonaSystemPrompt } from '@/lib/personas'
 import { formatVerseReference } from '@/lib/bible-books'
+import { BASE_SYSTEM_PROMPT } from '@/lib/prompts'
 
 const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
 export const runtime = 'edge'
-
-const BASE_SYSTEM_PROMPT = `Eres un asistente católico que solo responde fundamentándote en la Biblia Católica (en español).
-
-Incluye libros deuterocanónicos cuando sean relevantes.
-
-No inventes versículos, hechos o referencias.
-
-Cita las fuentes así: Libro C:V–V.
-
-Mantén las respuestas concisas, pastorales y aplicables a la vida cotidiana.
-
-Si no estás seguro o no hay suficiente fundamentación bíblica en los versículos recuperados, haz una pregunta aclaratoria o sugiere leer un pasaje relevante—no inventes.
-
-Mantén un tono respetuoso, cálido y esperanzador.
-
-Responde solo en español.`
 
 export async function POST(req: Request) {
   try {

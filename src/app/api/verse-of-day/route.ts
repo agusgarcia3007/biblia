@@ -2,23 +2,16 @@ import { createClient } from "@/lib/supabase/server";
 import { formatVerseReference } from "@/lib/bible-books";
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText } from "ai";
+import { Database } from "@/lib/supabase/database.types";
+import { REFLECTION_SYSTEM_PROMPT } from "@/lib/prompts";
+
+type BibleVerse = Database["public"]["Tables"]["bible_verses"]["Row"];
 
 const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
 export const runtime = "edge";
-
-const REFLECTION_SYSTEM_PROMPT = `Genera una breve reflexión pastoral (2-3 oraciones) sobre el versículo bíblico proporcionado.
-
-La reflexión debe ser:
-- Concisa y aplicable a la vida cotidiana
-- Pastoral y esperanzadora
-- Fundamentada solo en el versículo dado
-- Sin especulación doctrinal
-- En español
-
-No inventes contenido doctrinal. Mantén un tono cálido y cercano.`;
 
 // Approximate total verses in Catholic Bible (including deuterocanonical books)
 const TOTAL_VERSES = 31102;
@@ -44,9 +37,24 @@ export async function GET(req: Request) {
 
     const supabase = await createClient();
 
+    // First, check total count
+    const { count, error: countError } = await supabase
+      .from("bible_verses")
+      .select("*", { count: "exact", head: true });
+
+    if (countError || !count || count === 0) {
+      console.error("Error getting verse count:", countError);
+      return new Response("Error al contar versículos", { status: 500 });
+    }
+
     // Deterministically select verse based on date
     const hash = hashDate(date);
-    const selectedIndex = hash % TOTAL_VERSES;
+    const selectedIndex = hash % count;
+
+    console.log("Date:", date);
+    console.log("Hash:", hash);
+    console.log("Total verses in DB:", count);
+    console.log("Selected index:", selectedIndex);
 
     // Fetch the selected verse
     const { data: verses, error: verseError } = await supabase
@@ -54,24 +62,17 @@ export async function GET(req: Request) {
       .select("*")
       .order("book_order, chapter, verse")
       .range(selectedIndex, selectedIndex)
-      .limit(1)
-      .returns<
-        Array<{
-          id: string;
-          book: string;
-          chapter: number;
-          verse: number;
-          text: string;
-          is_deuterocanon: boolean;
-          book_order: number;
-        }>
-      >();
+      .limit(1);
+
+    console.log("Verses:", verses);
+    console.log("Verse error:", verseError);
 
     if (verseError || !verses || verses.length === 0) {
+      console.error("Error fetching verse:", verseError);
       return new Response("Error al recuperar versículo", { status: 500 });
     }
 
-    const verse = verses[0];
+    const verse = verses[0] as BibleVerse;
 
     // Fetch context (previous and next verses)
     const { data: contextVerses, error: contextError } = await supabase
