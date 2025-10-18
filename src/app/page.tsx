@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { handleUnauthorized } from "@/lib/auth-utils";
+import { createClient } from "@/lib/supabase/client";
 
 interface VerseOfDay {
   verse: {
@@ -47,6 +48,7 @@ interface Streak {
 
 export default function Home() {
   const router = useRouter();
+  const supabase = createClient();
   const [verseOfDay, setVerseOfDay] = useState<VerseOfDay | null>(null);
   const [streak, setStreak] = useState<Streak | null>(null);
   const [loading, setLoading] = useState(true);
@@ -116,6 +118,15 @@ export default function Home() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      router.push("/auth");
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
+
   const handleShareVerse = async () => {
     if (!verseOfDay) return;
 
@@ -180,7 +191,8 @@ export default function Home() {
           });
 
           // Check if we can share files
-          const canShareFiles = navigator.canShare && navigator.canShare({ files: [file] });
+          const canShareFiles =
+            navigator.canShare && navigator.canShare({ files: [file] });
 
           if (canShareFiles) {
             await navigator.share({
@@ -197,14 +209,16 @@ export default function Home() {
 
             // Then share text to allow user to attach the downloaded image
             setTimeout(() => {
-              navigator.share({
-                title: "Versículo del Día",
-                text: `${verseOfDay.verse.reference}\n\nHe descargado la imagen, adjúntala desde tu galería.`,
-              }).catch(() => {});
+              navigator
+                .share({
+                  title: "Versículo del Día",
+                  text: `${verseOfDay.verse.reference}\n\nHe descargado la imagen, adjúntala desde tu galería.`,
+                })
+                .catch(() => {});
             }, 500);
           }
-        } catch (shareError: any) {
-          if (shareError.name !== 'AbortError') {
+        } catch (shareError) {
+          if ((shareError as Error).name !== "AbortError") {
             // Fallback: download
             const link = document.createElement("a");
             link.download = "versiculo.png";
@@ -271,14 +285,12 @@ export default function Home() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link
-                    href="/auth"
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>Cerrar sesión</span>
-                  </Link>
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Cerrar sesión</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
