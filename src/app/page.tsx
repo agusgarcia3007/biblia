@@ -14,6 +14,7 @@ import {
   Phone,
   Settings,
   LogOut,
+  Trophy,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toPng } from "html-to-image";
@@ -149,12 +150,9 @@ export default function Home() {
             content={{
               title: verseOfDay.verse.reference,
               text: verseOfDay.verse.text,
-              subtitle:
-                verseOfDay.reflection.length > 200
-                  ? verseOfDay.reflection.substring(0, 200) + "..."
-                  : verseOfDay.reflection,
+              subtitle: verseOfDay.reflection,
             }}
-            streak={streak?.current_streak}
+            streak={streak?.current_streak || 0}
           />
         );
         // Wait for render
@@ -259,6 +257,11 @@ export default function Home() {
           </h1>
           <div className="flex items-center gap-4">
             {streak && <StreakBadge streak={streak.current_streak} />}
+            <Link href="/leaderboard">
+              <Button variant="ghost" size="icon">
+                <Trophy className="h-5 w-5" />
+              </Button>
+            </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">
