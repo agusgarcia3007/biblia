@@ -338,50 +338,50 @@ export default function Home() {
           {/* Quick Actions */}
           <section className="space-y-3">
             <h3 className="text-xl font-semibold">Acciones Rápidas</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Link href="/chat">
-                <Button
-                  variant="outline"
-                  className="w-full h-24 flex-col gap-2"
-                  size="lg"
-                >
-                  <MessageSquare className="h-6 w-6" />
-                  <span>Chatear con la Biblia</span>
-                </Button>
-              </Link>
+            <div className="flex flex-col gap-4">
               <Link href="/talk">
                 <Button
-                  variant="outline"
-                  className="w-full h-24 flex-col gap-2 relative overflow-hidden border-primary/50 hover:border-primary transition-all duration-300 group"
+                  className="w-full h-24 flex-col gap-2 relative overflow-hidden bg-gradient-to-br from-primary via-accent to-primary/80 hover:scale-[1.02] transition-all duration-300 group border-0 shadow-lg"
                   size="lg"
                 >
-                  <div className="absolute inset-0 bg-gradient-radial from-primary/20 via-accent/10 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
-                  <Phone className="h-6 w-6 relative z-10 group-hover:scale-110 transition-transform duration-300" />
-                  <span className="relative z-10 font-semibold">
+                  <Phone className="h-6 w-6 relative z-10 group-hover:scale-110 transition-transform duration-300 text-primary-foreground" />
+                  <span className="relative z-10 font-semibold text-primary-foreground">
                     Hablar con un Santo
                   </span>
                 </Button>
               </Link>
-              <Link href="/prayer">
-                <Button
-                  variant="outline"
-                  className="w-full h-24 flex-col gap-2"
-                  size="lg"
-                >
-                  <Heart className="h-6 w-6" />
-                  <span>Orar Conmigo</span>
-                </Button>
-              </Link>
-              <Link href="/journal">
-                <Button
-                  variant="outline"
-                  className="w-full h-24 flex-col gap-2"
-                  size="lg"
-                >
-                  <BookOpen className="h-6 w-6" />
-                  <span>Mi Diario Espiritual</span>
-                </Button>
-              </Link>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Link href="/chat">
+                  <Button
+                    variant="outline"
+                    className="w-full h-24 flex-col gap-2"
+                    size="lg"
+                  >
+                    <MessageSquare className="h-6 w-6" />
+                    <span>Chatear con la Biblia</span>
+                  </Button>
+                </Link>
+                <Link href="/prayer">
+                  <Button
+                    variant="outline"
+                    className="w-full h-24 flex-col gap-2"
+                    size="lg"
+                  >
+                    <Heart className="h-6 w-6" />
+                    <span>Orar Conmigo</span>
+                  </Button>
+                </Link>
+                <Link href="/journal">
+                  <Button
+                    variant="outline"
+                    className="w-full h-24 flex-col gap-2"
+                    size="lg"
+                  >
+                    <BookOpen className="h-6 w-6" />
+                    <span>Mi Diario Espiritual</span>
+                  </Button>
+                </Link>
+              </div>
             </div>
           </section>
         </div>
