@@ -2,7 +2,7 @@ import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import { createClient } from "@/lib/supabase/server";
 import { getPersonaSystemPrompt } from "@/lib/personas";
-import { PRAYER_SYSTEM_PROMPT } from "@/lib/prompts";
+import { PRAYER_SYSTEM_PROMPT, PRAYER_USER_PROMPT } from "@/lib/prompts";
 
 export const runtime = "edge";
 
@@ -33,18 +33,8 @@ export async function POST(req: Request) {
     // Build persona-specific prompt
     const personaPrompt = getPersonaSystemPrompt(personaKey);
 
-    // Build prayer request prompt
-    const prayerPrompt = `Genera una oración en español para una persona que busca:
-
-Intención: ${intentTag}
-${userContext ? `\nContexto adicional: ${userContext}` : ""}
-
-La oración debe ser:
-- Breve y reverente
-- Pastoral y esperanzadora
-- Fundamentada en la fe católica
-- Sin especulación doctrinal
-- Adecuada para oración personal`;
+    // Build prayer request prompt using centralized template
+    const prayerPrompt = PRAYER_USER_PROMPT(intentTag, userContext);
 
     const fullSystemPrompt = `${PRAYER_SYSTEM_PROMPT}\n\n${personaPrompt}`;
 
@@ -53,7 +43,7 @@ La oración debe ser:
       model: openai(process.env.AI_MODEL_CHAT || "gpt-4"),
       system: fullSystemPrompt,
       prompt: prayerPrompt,
-      temperature: 0.5, // Slightly higher for creativity but still controlled
+      temperature: 0.7, // Higher for more creative and rich prayers
     });
 
     const prayerContent = result.text;

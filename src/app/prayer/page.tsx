@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { PersonaSelect } from '@/components/persona-select'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Heart, Home, Loader2, Bookmark, Copy, Share2 } from 'lucide-react'
+import { Heart, Home, Loader2, Bookmark, Copy, Share2, Volume2, Pause } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { DEFAULT_PERSONA_KEY } from '@/lib/personas'
 
@@ -39,6 +39,10 @@ export default function PrayerPage() {
   const [generatedPrayer, setGeneratedPrayer] = useState<PrayerResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false)
+  const [audioUrl, setAudioUrl] = useState<string | null>(null)
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null)
+  const [isLoadingAudio, setIsLoadingAudio] = useState(false)
 
   const handleGeneratePrayer = async () => {
     if (!selectedIntent) {
@@ -116,6 +120,68 @@ export default function PrayerPage() {
     setGeneratedPrayer(null)
     setSelectedIntent('')
     setUserContext('')
+    if (audioElement) {
+      audioElement.pause()
+      audioElement.src = ''
+      setAudioElement(null)
+    }
+    if (audioUrl) {
+      URL.revokeObjectURL(audioUrl)
+      setAudioUrl(null)
+    }
+    setIsPlayingAudio(false)
+  }
+
+  const handleTextToSpeech = async () => {
+    if (!generatedPrayer) return
+
+    // Si ya hay audio cargado, solo reproducir/pausar
+    if (audioElement) {
+      if (isPlayingAudio) {
+        audioElement.pause()
+        setIsPlayingAudio(false)
+      } else {
+        await audioElement.play()
+        setIsPlayingAudio(true)
+      }
+      return
+    }
+
+    // Generar nuevo audio
+    setIsLoadingAudio(true)
+
+    try {
+      const response = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: generatedPrayer.prayer,
+          personaKey: generatedPrayer.personaKey,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Error al generar audio')
+      }
+
+      const audioBlob = await response.blob()
+      const url = URL.createObjectURL(audioBlob)
+      setAudioUrl(url)
+
+      const audio = new Audio(url)
+      audio.onended = () => setIsPlayingAudio(false)
+      audio.onpause = () => setIsPlayingAudio(false)
+      audio.onplay = () => setIsPlayingAudio(true)
+
+      setAudioElement(audio)
+      await audio.play()
+      setIsPlayingAudio(true)
+    } catch (err) {
+      console.error('Error playing audio:', err)
+      alert('Error al reproducir audio')
+    } finally {
+      setIsLoadingAudio(false)
+    }
   }
 
   return (
@@ -247,7 +313,11 @@ export default function PrayerPage() {
               </CardHeader>
               <CardContent>
                 <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <p className="whitespace-pre-wrap text-base leading-relaxed">
+                  <p
+                    className={`whitespace-pre-wrap text-base leading-relaxed transition-colors duration-300 ${
+                      isPlayingAudio ? 'text-primary' : ''
+                    }`}
+                  >
                     {generatedPrayer.prayer}
                   </p>
                 </div>
@@ -255,18 +325,44 @@ export default function PrayerPage() {
             </Card>
 
             {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button variant="outline" className="flex-1" onClick={handleSavePrayer}>
-                <Bookmark className="mr-2 h-4 w-4" />
-                Guardar en Diario
+            <div className="flex flex-col gap-3">
+              <Button
+                variant="default"
+                className="w-full"
+                onClick={handleTextToSpeech}
+                disabled={isLoadingAudio}
+              >
+                {isLoadingAudio ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Cargando audio...
+                  </>
+                ) : isPlayingAudio ? (
+                  <>
+                    <Pause className="mr-2 h-4 w-4" />
+                    Pausar
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="mr-2 h-4 w-4" />
+                    {audioElement ? 'Continuar' : 'Escuchar Oración'}
+                  </>
+                )}
               </Button>
-              <Button variant="outline" className="flex-1" onClick={handleSharePrayer}>
-                <Share2 className="mr-2 h-4 w-4" />
-                Compartir
-              </Button>
-              <Button variant="outline" className="flex-1" onClick={handleReset}>
-                Nueva Oración
-              </Button>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button variant="outline" className="flex-1" onClick={handleSavePrayer}>
+                  <Bookmark className="mr-2 h-4 w-4" />
+                  Guardar en Diario
+                </Button>
+                <Button variant="outline" className="flex-1" onClick={handleSharePrayer}>
+                  <Share2 className="mr-2 h-4 w-4" />
+                  Compartir
+                </Button>
+                <Button variant="outline" className="flex-1" onClick={handleReset}>
+                  Nueva Oración
+                </Button>
+              </div>
             </div>
 
             {/* Guided Prayer Section */}
