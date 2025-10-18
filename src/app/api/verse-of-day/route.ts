@@ -13,9 +13,6 @@ const openai = createOpenAI({
 
 export const runtime = "edge";
 
-// Approximate total verses in Catholic Bible (including deuterocanonical books)
-const TOTAL_VERSES = 31102;
-
 /**
  * Deterministic hash function to select verse based on date
  */
