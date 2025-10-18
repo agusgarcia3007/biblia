@@ -20,6 +20,13 @@ La reflexión debe ser:
 
 No inventes contenido doctrinal. Mantén un tono cálido y cercano.`
 
+// Approximate total verses in Catholic Bible (including deuterocanonical books)
+const TOTAL_VERSES = 31102
+
+// In-memory cache for verse of the day
+const cache = new Map<string, { data: any; timestamp: number }>()
+const CACHE_TTL = 24 * 60 * 60 * 1000 // 24 hours
+
 /**
  * Deterministic hash function to select verse based on date
  */
@@ -38,20 +45,21 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
     const date = searchParams.get('date') || new Date().toISOString().split('T')[0]
 
-    const supabase = await createClient()
-
-    // Get total count of verses
-    const { count, error: countError } = await supabase
-      .from('bible_verses')
-      .select('*', { count: 'exact', head: true })
-
-    if (countError || !count || count === 0) {
-      return new Response('No hay versículos disponibles', { status: 500 })
+    // Check cache first
+    const cached = cache.get(date)
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      return Response.json(cached.data, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=172800',
+        },
+      })
     }
+
+    const supabase = await createClient()
 
     // Deterministically select verse based on date
     const hash = hashDate(date)
-    const selectedIndex = hash % count
+    const selectedIndex = hash % TOTAL_VERSES
 
     // Fetch the selected verse
     const { data: verses, error: verseError } = await supabase
@@ -96,7 +104,7 @@ Escribe una breve reflexión pastoral (2-3 oraciones) que ayude a aplicar este v
       maxTokens: 200,
     })
 
-    return Response.json({
+    const responseData = {
       verse: {
         id: verse.id,
         book: verse.book,
@@ -109,6 +117,15 @@ Escribe una breve reflexión pastoral (2-3 oraciones) que ayude a aplicar este v
       reflection: result.text,
       context: contextVerses || [],
       date,
+    }
+
+    // Store in cache
+    cache.set(date, { data: responseData, timestamp: Date.now() })
+
+    return Response.json(responseData, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=172800',
+      },
     })
   } catch (error) {
     console.error('Error in verse-of-day route:', error)
