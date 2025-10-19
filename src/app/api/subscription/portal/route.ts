@@ -29,6 +29,7 @@ export async function GET() {
     }
 
     // Get subscription details from Polar to find customer ID
+    console.log('Fetching subscription from Polar:', subscription.polar_subscription_id)
     const subResponse = await fetch(
       `https://api.polar.sh/v1/subscriptions/${subscription.polar_subscription_id}`,
       {
@@ -39,24 +40,29 @@ export async function GET() {
     )
 
     if (!subResponse.ok) {
-      console.error('Failed to fetch subscription from Polar')
+      const errorText = await subResponse.text()
+      console.error('Failed to fetch subscription from Polar:', subResponse.status, errorText)
       return NextResponse.json({
-        error: 'Failed to fetch subscription'
+        error: 'Failed to fetch subscription',
+        details: errorText
       }, { status: 500 })
     }
 
     const subData = await subResponse.json()
+    console.log('Subscription data from Polar:', JSON.stringify(subData, null, 2))
     const customerId = subData.customer_id
 
     if (!customerId) {
+      console.error('No customer_id in subscription data')
       return NextResponse.json({
         error: 'Customer ID not found'
       }, { status: 404 })
     }
 
     // Create customer portal session
+    console.log('Creating portal session for customer:', customerId)
     const portalResponse = await fetch(
-      'https://api.polar.sh/v1/customer-portal/sessions/',
+      'https://api.polar.sh/v1/customer-sessions',
       {
         method: 'POST',
         headers: {
@@ -71,9 +77,10 @@ export async function GET() {
 
     if (!portalResponse.ok) {
       const errorText = await portalResponse.text()
-      console.error('Portal session error:', errorText)
+      console.error('Portal session error:', portalResponse.status, errorText)
       return NextResponse.json({
-        error: 'Failed to create portal session'
+        error: 'Failed to create portal session',
+        details: errorText
       }, { status: 500 })
     }
 

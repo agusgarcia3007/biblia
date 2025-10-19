@@ -33,7 +33,8 @@ export async function POST(req: NextRequest) {
         customer_email: user.email,
         customer_metadata: {
           external_customer_id: user.id,
-        }
+        },
+        success_url: 'https://www.bibliai.org/talk?payment=success'
       }),
     })
 

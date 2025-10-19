@@ -7,18 +7,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { SaintPicker } from '@/components/saint-picker'
 import { Badge } from '@/components/ui/badge'
 import { Phone, PhoneOff, Home, Mic, MicOff, Loader2, Crown } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { DEFAULT_PERSONA_KEY, getPersonaByKey } from '@/lib/personas'
 import { PremiumPaywall } from '@/components/premium-paywall'
+import Confetti from 'react-confetti'
+import { useWindowSize } from '@/hooks/use-window-size'
 
 export default function TalkPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const { width, height } = useWindowSize()
   const [personaKey, setPersonaKey] = useState(DEFAULT_PERSONA_KEY)
   const [isConnected, setIsConnected] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
   const [showPaywall, setShowPaywall] = useState(false)
   const [isCheckingAccess, setIsCheckingAccess] = useState(true)
   const [hasPremiumAccess, setHasPremiumAccess] = useState(false)
+  const [showConfetti, setShowConfetti] = useState(false)
 
   const conversation = useConversation({
     onConnect: () => {
@@ -79,6 +84,16 @@ export default function TalkPage() {
           const data = await response.json()
           setHasPremiumAccess(data.hasAccess)
 
+          // If payment was successful, show confetti
+          const paymentSuccess = searchParams.get('payment') === 'success'
+          if (paymentSuccess && data.hasAccess) {
+            setShowConfetti(true)
+            // Hide confetti after 5 seconds
+            setTimeout(() => setShowConfetti(false), 5000)
+            // Clean up URL
+            router.replace('/talk')
+          }
+
           // If no access, show paywall immediately
           if (!data.hasAccess) {
             setShowPaywall(true)
@@ -93,7 +108,7 @@ export default function TalkPage() {
     }
 
     checkSubscription()
-  }, [])
+  }, [searchParams, router])
 
   // Handle successful subscription
   const handleSubscriptionSuccess = async () => {
@@ -225,6 +240,16 @@ export default function TalkPage() {
   // Show full talk page for premium users
   return (
     <div className="min-h-screen bg-background">
+      {/* Confetti for successful payment */}
+      {showConfetti && (
+        <Confetti
+          width={width}
+          height={height}
+          recycle={false}
+          numberOfPieces={500}
+        />
+      )}
+
       {/* Header */}
       <header className="border-b bg-background/95 backdrop-blur">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
