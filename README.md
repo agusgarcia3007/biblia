@@ -1,3 +1,21 @@
+# 🚀 Cómo Probar la Aplicación
+
+Puedes probar el MVP de **Biblia Católica AI** directamente con un usuario que ya tiene el **plan premium activo**:
+
+https://www.bibliai.org/
+
+- **Email:** agustinbotella90+@gmail.com  
+- **Contraseña:** Picanton  
+
+Accede en la página de inicio de sesión y tendrás habilitado el acceso completo a todas las funcionalidades premium:
+- Chat con la Biblia
+- Generación de oraciones personalizadas
+- Diario espiritual
+- Versículo del día
+- Sistema de rachas y perfiles de santos
+
+---
+
 # Biblia Católica AI - MVP
 
 Una aplicación web para explorar la Biblia Católica en español con la ayuda de inteligencia artificial. Los usuarios pueden chatear con la Biblia, generar oraciones personalizadas al estilo de santos católicos, recibir versículos del día y mantener un diario espiritual.
