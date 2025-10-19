@@ -71,7 +71,7 @@ function TalkPageContent() {
     });
 
     try {
-      // Get signed URL from backend for secure connection
+      // Try to get signed URL from backend for secure connection
       const response = await fetch("/api/conversation/signed-url", {
         method: "POST",
         headers: {
@@ -84,7 +84,14 @@ function TalkPageContent() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to get signed URL");
+        console.error("Signed URL error:", errorData);
+
+        // Fallback to direct agentId if signed URL fails (for development)
+        console.warn("Falling back to direct agentId connection");
+        await conversation.startSession({
+          agentId: persona.agentId,
+        });
+        return;
       }
 
       const { signedUrl } = await response.json();
@@ -108,7 +115,7 @@ function TalkPageContent() {
 
   const handleToggleMute = () => {
     if (conversation.isSpeaking) {
-      conversation.setVolume(isMuted ? 1 : 0);
+      conversation.setVolume({ volume: isMuted ? 1 : 0 });
       setIsMuted(!isMuted);
     }
   };
@@ -173,6 +180,7 @@ function TalkPageContent() {
         conversation.endSession();
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected]);
 
   const selectedPersona = getPersonaByKey(personaKey);

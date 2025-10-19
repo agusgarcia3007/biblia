@@ -24,7 +24,7 @@ export async function POST(req: Request) {
       }, { status: 401 })
     }
 
-    const { data: subscriptions, error: dbError } = await (supabase as any)
+    const { data: subscriptions, error: dbError } = await supabase
       .from('subscriptions')
       .select('*')
       .eq('user_id', user.id)
@@ -61,8 +61,16 @@ export async function POST(req: Request) {
     })
   } catch (error) {
     console.error('Error generating signed URL:', error)
+
+    // Log detailed error information
+    if (error instanceof Error) {
+      console.error('Error message:', error.message)
+      console.error('Error stack:', error.stack)
+    }
+
     return NextResponse.json({
-      error: 'Failed to generate signed URL'
+      error: 'Failed to generate signed URL',
+      details: error instanceof Error ? error.message : String(error)
     }, { status: 500 })
   }
 }
