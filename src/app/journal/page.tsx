@@ -8,6 +8,7 @@ import { BookOpen, Home, Loader2, MessageSquare, Heart, BookMarked, Trash2 } fro
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { track } from '@vercel/analytics'
 
 interface JournalEntry {
   id: string
@@ -24,6 +25,7 @@ export default function JournalPage() {
   const [filter, setFilter] = useState<'all' | 'chat' | 'prayer' | 'verse'>('all')
 
   useEffect(() => {
+    track('Journal Page View');
     fetchEntries()
   }, [])
 
@@ -43,6 +45,8 @@ export default function JournalPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('¿Estás seguro de que quieres eliminar esta entrada?')) return
+
+    track('Journal Entry Deleted');
 
     try {
       const response = await fetch(`/api/journal?id=${id}`, { method: 'DELETE' })

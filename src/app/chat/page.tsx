@@ -20,6 +20,7 @@ import {
 import { ShareImage } from '@/components/share-image'
 import { toPng } from 'html-to-image'
 import { PremiumPaywall } from '@/components/premium-paywall'
+import { track } from '@vercel/analytics'
 
 export default function ChatPage() {
   const router = useRouter()
@@ -47,6 +48,8 @@ export default function ChatPage() {
 
   // Check subscription status on mount
   useEffect(() => {
+    track('Chat Page View')
+
     async function checkSubscription() {
       try {
         const response = await fetch('/api/subscription/check')
@@ -97,6 +100,7 @@ export default function ChatPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (input.trim() && status === 'ready') {
+      track('Chat Message Sent', { personaKey })
       sendMessage({ text: input })
       setInput('')
     }

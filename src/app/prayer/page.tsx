@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { track } from "@vercel/analytics";
 
 const PRAYER_INTENTS = [
   { key: "gratitud", label: "Gratitud" },
@@ -75,6 +76,8 @@ export default function PrayerPage() {
   const [streak, setStreak] = useState<Streak | null>(null);
 
   useEffect(() => {
+    track('Prayer Page View');
+
     // Restaurar estado si existe
     const savedState = restoreSavedState();
     if (savedState?.path === "/prayer" && savedState.formData) {
@@ -110,6 +113,12 @@ export default function PrayerPage() {
       alert("Por favor selecciona una intención");
       return;
     }
+
+    track('Prayer Generated', {
+      personaKey,
+      intent: selectedIntent,
+      hasContext: !!userContext.trim()
+    });
 
     setLoading(true);
     setError(null);

@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { handleUnauthorized } from "@/lib/auth-utils";
 import { createClient } from "@/lib/supabase/client";
+import { track } from "@vercel/analytics";
 
 interface VerseOfDay {
   verse: {
@@ -61,11 +62,17 @@ export default function Home() {
   useEffect(() => {
     async function fetchData() {
       try {
+        // Track page view
+        track("Home Page View");
+
         // Fetch verse of the day
         const verseRes = await fetch("/api/verse-of-day");
         if (verseRes.ok) {
           const verseData = await verseRes.json();
           setVerseOfDay(verseData);
+          track("Verse of Day Loaded", {
+            reference: verseData.verse.reference,
+          });
         }
 
         // Fetch streak (if authenticated)
@@ -78,6 +85,9 @@ export default function Home() {
           const today = new Date().toISOString().split("T")[0];
           if (streakData.last_active_date !== today) {
             await fetch("/api/streak", { method: "POST" });
+            track("Streak Updated", {
+              streak: streakData.current_streak + 1,
+            });
           }
         }
 
@@ -101,6 +111,10 @@ export default function Home() {
     if (!verseOfDay) return;
 
     try {
+      track("Verse Saved", {
+        reference: verseOfDay.verse.reference,
+      });
+
       const response = await fetch("/api/journal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -141,6 +155,10 @@ export default function Home() {
 
   const handleShareVerse = async () => {
     if (!verseOfDay) return;
+
+    track("Verse Share Started", {
+      reference: verseOfDay.verse.reference,
+    });
 
     try {
       // Create a temporary container for the ShareImage component
@@ -209,6 +227,10 @@ export default function Home() {
               title: "Versículo del Día",
               text: `${verseOfDay.verse.reference}`,
             });
+            track("Verse Shared Successfully", {
+              reference: verseOfDay.verse.reference,
+              method: "file",
+            });
           } else {
             // Mobile fallback: download the image automatically
             const link = document.createElement("a");
@@ -275,7 +297,7 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-4">
             {streak && <StreakBadge streak={streak.current_streak} />}
-            <Link href="/leaderboard">
+            <Link href="/leaderboard" onClick={() => track("Leaderboard Clicked")}>
               <Button variant="ghost" size="icon">
                 <Trophy className="h-5 w-5" />
               </Button>
@@ -370,7 +392,7 @@ export default function Home() {
           <section className="space-y-3">
             <h3 className="text-xl font-semibold">Acciones Rápidas</h3>
             <div className="flex flex-col gap-4">
-              <Link href="/talk">
+              <Link href="/talk" onClick={() => track("Talk with Saint Clicked")}>
                 <Button
                   className="w-full h-24 flex-col gap-2 relative overflow-hidden bg-gradient-to-br from-yellow-500 via-yellow-600 to-yellow-700 hover:scale-[1.02] transition-all duration-300 group border-0 shadow-lg"
                   size="lg"
@@ -388,7 +410,7 @@ export default function Home() {
                 </Button>
               </Link>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Link href="/chat">
+                <Link href="/chat" onClick={() => track("Chat with Bible Clicked")}>
                   <Button
                     variant="outline"
                     className="w-full h-24 flex-col gap-2"
@@ -398,7 +420,7 @@ export default function Home() {
                     <span>Chatear con la Biblia</span>
                   </Button>
                 </Link>
-                <Link href="/prayer">
+                <Link href="/prayer" onClick={() => track("Pray with Me Clicked")}>
                   <Button
                     variant="outline"
                     className="w-full h-24 flex-col gap-2"
@@ -408,7 +430,7 @@ export default function Home() {
                     <span>Orar Conmigo</span>
                   </Button>
                 </Link>
-                <Link href="/journal">
+                <Link href="/journal" onClick={() => track("Journal Clicked")}>
                   <Button
                     variant="outline"
                     className="w-full h-24 flex-col gap-2"
