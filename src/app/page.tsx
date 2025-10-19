@@ -17,6 +17,7 @@ import {
   LogOut,
   Trophy,
   Crown,
+  CreditCard,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toPng } from "html-to-image";
@@ -295,6 +296,15 @@ export default function Home() {
                     <Settings className="h-4 w-4" />
                     <span>Configuración</span>
                   </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <a
+                    href="/api/subscription/portal"
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    <span>Gestionar Suscripción</span>
+                  </a>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem

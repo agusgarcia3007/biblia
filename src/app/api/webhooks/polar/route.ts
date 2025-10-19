@@ -4,12 +4,13 @@ import { createClient } from '@/lib/supabase/server'
 export async function POST(req: Request) {
   try {
     const payload = await req.json()
-    const event = payload.event
+    const eventType = payload.type
 
-    console.log('Polar webhook event:', event)
+    console.log('Polar webhook event:', eventType)
+    console.log('Payload:', JSON.stringify(payload, null, 2))
 
     // Handle different webhook events
-    switch (event) {
+    switch (eventType) {
       case 'subscription.created':
       case 'subscription.updated':
       case 'subscription.active':
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
         break
 
       default:
-        console.log('Unhandled webhook event:', event)
+        console.log('Unhandled webhook event:', eventType)
     }
 
     return NextResponse.json({ received: true })
