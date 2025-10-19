@@ -21,15 +21,10 @@ export async function POST(req: Request) {
 
     const supabase = await createClient()
 
-    // Check authentication
+    // Get user if authenticated (optional)
     const {
       data: { user },
-      error: authError,
     } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return new Response('No autorizado', { status: 401 })
-    }
 
     // Get the last user message for RAG retrieval
     const lastUserMessage = messages[messages.length - 1]
@@ -121,11 +116,13 @@ export async function POST(req: Request) {
       maxTokens: 500,
     })
 
-    // Store the user message and assistant response in the database
+    // Store the user message and assistant response in the database (only if authenticated)
     // This happens asynchronously; we don't wait for it
-    storeMessages(supabase, user.id, sessionId, messages, groundingRefs, personaKey).catch(
-      console.error
-    )
+    if (user) {
+      storeMessages(supabase, user.id, sessionId, messages, groundingRefs, personaKey).catch(
+        console.error
+      )
+    }
 
     return result.toUIMessageStreamResponse()
   } catch (error) {
