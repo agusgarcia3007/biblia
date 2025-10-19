@@ -71,9 +71,34 @@ function TalkPageContent() {
     });
 
     try {
+      const response = await fetch("/api/conversation/signed-url", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          agentId: persona.agentId,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        if (response.status === 401) {
+          alert("Debes iniciar sesión para usar esta función");
+          return;
+        }
+        if (response.status === 403) {
+          alert("Necesitas una suscripción premium activa");
+          setShowPaywall(true);
+          return;
+        }
+        throw new Error(error.error || "Failed to get signed URL");
+      }
+
+      const { signedUrl } = await response.json();
+
       await conversation.startSession({
-        agentId: persona.agentId,
-        connectionType: "websocket" as const,
+        signedUrl,
       });
     } catch (error) {
       console.error("Error starting conversation:", error);
