@@ -23,7 +23,7 @@ export function ShareImage({ type, content, streak }: ShareImageProps) {
       {/* Header with Streak */}
       <div className="flex items-center justify-between mb-12">
         <div className="text-4xl font-bold text-primary">
-          Biblia Católica AI
+          bibliAI
         </div>
         {streak !== undefined && streak > 0 && (
           <div className="flex items-center gap-4 bg-primary/10 px-8 py-4 rounded-full border-2 border-primary">
@@ -73,7 +73,7 @@ export function ShareImage({ type, content, streak }: ShareImageProps) {
           Descubre más en
         </div>
         <div className="text-3xl font-bold text-primary mt-2">
-          bibliacatolica.app
+          bibliAI.org
         </div>
       </div>
     </div>

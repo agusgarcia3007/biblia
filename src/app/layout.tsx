@@ -8,7 +8,7 @@ const lora = Lora({
 });
 
 export const metadata: Metadata = {
-  title: "Biblia Católica AI - Oraciones, Lecturas y Reflexiones",
+  title: "bibliAI - Oraciones, Lecturas y Reflexiones",
   description:
     "Explora la Biblia Católica con la ayuda de la inteligencia artificial. Ora con santos, recibe el versículo del día y mantén tu racha espiritual.",
 };

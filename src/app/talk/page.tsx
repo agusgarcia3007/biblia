@@ -6,15 +6,19 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { SaintPicker } from '@/components/saint-picker'
 import { Badge } from '@/components/ui/badge'
-import { Phone, PhoneOff, Home, Mic, MicOff } from 'lucide-react'
+import { Phone, PhoneOff, Home, Mic, MicOff, Loader2, Crown } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { DEFAULT_PERSONA_KEY, getPersonaByKey } from '@/lib/personas'
+import { PremiumPaywall } from '@/components/premium-paywall'
 
 export default function TalkPage() {
   const router = useRouter()
   const [personaKey, setPersonaKey] = useState(DEFAULT_PERSONA_KEY)
   const [isConnected, setIsConnected] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
+  const [showPaywall, setShowPaywall] = useState(false)
+  const [isCheckingAccess, setIsCheckingAccess] = useState(true)
+  const [hasPremiumAccess, setHasPremiumAccess] = useState(false)
 
   const conversation = useConversation({
     onConnect: () => {
@@ -66,6 +70,46 @@ export default function TalkPage() {
     }
   }
 
+  // Check subscription status on mount
+  useEffect(() => {
+    async function checkSubscription() {
+      try {
+        const response = await fetch('/api/subscription/check')
+        if (response.ok) {
+          const data = await response.json()
+          setHasPremiumAccess(data.hasAccess)
+
+          // If no access, show paywall immediately
+          if (!data.hasAccess) {
+            setShowPaywall(true)
+          }
+        }
+      } catch (error) {
+        console.error('Error checking subscription:', error)
+        setShowPaywall(true) // Show paywall on error to be safe
+      } finally {
+        setIsCheckingAccess(false)
+      }
+    }
+
+    checkSubscription()
+  }, [])
+
+  // Handle successful subscription
+  const handleSubscriptionSuccess = async () => {
+    setShowPaywall(false)
+    // Recheck subscription status
+    try {
+      const response = await fetch('/api/subscription/check')
+      if (response.ok) {
+        const data = await response.json()
+        setHasPremiumAccess(data.hasAccess)
+      }
+    } catch (error) {
+      console.error('Error rechecking subscription:', error)
+    }
+  }
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -77,6 +121,108 @@ export default function TalkPage() {
 
   const selectedPersona = getPersonaByKey(personaKey)
 
+  // Show loading state while checking access
+  if (isCheckingAccess) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b bg-background/95 backdrop-blur">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Phone className="h-6 w-6 text-primary" />
+              <h1 className="text-xl font-bold">Hablar con un Santo</h1>
+            </div>
+            <Button variant="ghost" onClick={() => router.push('/')}>
+              <Home className="h-5 w-5" />
+            </Button>
+          </div>
+        </header>
+        <div className="container mx-auto px-4 py-8 max-w-2xl flex items-center justify-center min-h-[60vh]">
+          <div className="text-center space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+            <p className="text-muted-foreground">Verificando acceso...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show premium gate if no access
+  if (!hasPremiumAccess) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b bg-background/95 backdrop-blur">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Phone className="h-6 w-6 text-primary" />
+              <h1 className="text-xl font-bold">Hablar con un Santo</h1>
+            </div>
+            <Button variant="ghost" onClick={() => router.push('/')}>
+              <Home className="h-5 w-5" />
+            </Button>
+          </div>
+        </header>
+        <div className="container mx-auto px-4 py-8 max-w-2xl">
+          <Card className="border-yellow-500/20 bg-gradient-to-br from-yellow-500/5 to-primary/5">
+            <CardHeader className="text-center space-y-4">
+              <div className="mx-auto p-4 bg-yellow-500/10 rounded-full w-fit">
+                <Crown className="h-12 w-12 text-yellow-500" />
+              </div>
+              <CardTitle className="text-2xl">Función Premium</CardTitle>
+              <CardDescription className="text-base">
+                Hablar con los santos es una función exclusiva para suscriptores premium
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="bg-background/50 rounded-lg p-6 space-y-4">
+                <h3 className="font-semibold text-lg">Con la suscripción premium obtienes:</h3>
+                <ul className="space-y-3">
+                  <li className="flex items-start gap-3">
+                    <Phone className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <span>Conversaciones de voz en tiempo real con santos</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <Mic className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <span>Orientación espiritual personalizada y directa</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <Crown className="h-5 w-5 text-yellow-500 mt-0.5 flex-shrink-0" />
+                    <span>Acceso ilimitado a todos los santos disponibles</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="text-center space-y-4">
+                <div className="flex items-baseline justify-center gap-2">
+                  <span className="text-4xl font-bold">$4.99</span>
+                  <span className="text-muted-foreground">/mes</span>
+                </div>
+                <Button
+                  onClick={() => setShowPaywall(true)}
+                  size="lg"
+                  className="w-full"
+                >
+                  <Crown className="mr-2 h-5 w-5" />
+                  Suscribirse Ahora
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Cancela en cualquier momento
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Premium Paywall Dialog */}
+        <PremiumPaywall
+          open={showPaywall}
+          onOpenChange={setShowPaywall}
+          onSuccess={handleSubscriptionSuccess}
+        />
+      </div>
+    )
+  }
+
+  // Show full talk page for premium users
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -85,6 +231,7 @@ export default function TalkPage() {
           <div className="flex items-center gap-2">
             <Phone className="h-6 w-6 text-primary" />
             <h1 className="text-xl font-bold">Hablar con un Santo</h1>
+            <Badge variant="default" className="ml-2">Premium</Badge>
           </div>
           <Button variant="ghost" onClick={() => router.push('/')}>
             <Home className="h-5 w-5" />
@@ -113,7 +260,11 @@ export default function TalkPage() {
                 <CardDescription>Elige con quién deseas conversar</CardDescription>
               </CardHeader>
               <CardContent>
-                <SaintPicker value={personaKey} onValueChange={setPersonaKey} label="" />
+                <SaintPicker
+                  value={personaKey}
+                  onValueChange={setPersonaKey}
+                  label=""
+                />
               </CardContent>
             </Card>
           )}

@@ -55,6 +55,16 @@ CREATE TABLE IF NOT EXISTS streaks (
   last_active_date DATE DEFAULT CURRENT_DATE
 );
 
+-- Subscriptions table
+CREATE TABLE IF NOT EXISTS subscriptions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  polar_subscription_id TEXT UNIQUE NOT NULL,
+  status TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Bible verses table with vector embeddings
 CREATE TABLE IF NOT EXISTS bible_verses (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -81,6 +91,8 @@ CREATE INDEX IF NOT EXISTS idx_chat_messages_session_id ON chat_messages(session
 CREATE INDEX IF NOT EXISTS idx_prayers_user_id ON prayers(user_id);
 CREATE INDEX IF NOT EXISTS idx_journal_entries_user_id ON journal_entries(user_id);
 CREATE INDEX IF NOT EXISTS idx_bible_verses_book_chapter_verse ON bible_verses(book_order, chapter, verse);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_polar_id ON subscriptions(polar_subscription_id);
 
 -- Vector similarity search index (HNSW for better performance)
 CREATE INDEX IF NOT EXISTS idx_bible_verses_embedding ON bible_verses
@@ -185,6 +197,17 @@ CREATE POLICY "Users can insert own streak"
 CREATE POLICY "Users can update own streak"
   ON streaks FOR UPDATE
   USING (auth.uid() = user_id);
+
+-- Subscriptions
+ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own subscriptions"
+  ON subscriptions FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Service role can manage subscriptions"
+  ON subscriptions FOR ALL
+  USING (auth.role() = 'service_role');
 
 -- Bible verses (public read access)
 ALTER TABLE bible_verses ENABLE ROW LEVEL SECURITY;

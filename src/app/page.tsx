@@ -15,6 +15,7 @@ import {
   Settings,
   LogOut,
   Trophy,
+  Crown,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toPng } from "html-to-image";
@@ -253,7 +254,7 @@ export default function Home() {
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-primary">
-            Biblia Católica AI
+            bibliAI
           </h1>
           <div className="flex items-center gap-4">
             {streak && <StreakBadge streak={streak.current_streak} />}
@@ -341,13 +342,17 @@ export default function Home() {
             <div className="flex flex-col gap-4">
               <Link href="/talk">
                 <Button
-                  className="w-full h-24 flex-col gap-2 relative overflow-hidden bg-gradient-to-br from-primary via-accent to-primary/80 hover:scale-[1.02] transition-all duration-300 group border-0 shadow-lg"
+                  className="w-full h-24 flex-col gap-2 relative overflow-hidden bg-gradient-to-br from-yellow-500 via-yellow-600 to-yellow-700 hover:scale-[1.02] transition-all duration-300 group border-0 shadow-lg"
                   size="lg"
                 >
-                  <Phone className="h-6 w-6 relative z-10 group-hover:scale-110 transition-transform duration-300 text-primary-foreground" />
-                  <span className="relative z-10 font-semibold text-primary-foreground">
+                  <div className="absolute top-2 right-2 z-20">
+                    <Crown className="h-5 w-5 text-yellow-200" />
+                  </div>
+                  <Phone className="h-6 w-6 relative z-10 group-hover:scale-110 transition-transform duration-300 text-white" />
+                  <span className="relative z-10 font-semibold text-white">
                     Hablar con un Santo
                   </span>
+                  <span className="text-xs text-yellow-100 relative z-10">Premium</span>
                 </Button>
               </Link>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -390,7 +395,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t mt-12 py-6">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>© 2025 Biblia Católica AI. Todos los derechos reservados.</p>
+          <p>© 2025 bibliAI. Todos los derechos reservados.</p>
           <p className="mt-1">
             Basado en la Biblia Católica en español (dominio público)
           </p>
