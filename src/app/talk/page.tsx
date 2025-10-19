@@ -65,40 +65,29 @@ function TalkPageContent() {
       return;
     }
 
+    // Check premium access first
+    try {
+      const checkResponse = await fetch("/api/subscription/check");
+      if (checkResponse.ok) {
+        const { hasAccess } = await checkResponse.json();
+        if (!hasAccess) {
+          alert("Necesitas una suscripción premium activa");
+          setShowPaywall(true);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error("Error checking subscription:", error);
+    }
+
     track("Voice Conversation Started", {
       personaKey,
       saintName: persona.display_name,
     });
 
     try {
-      const response = await fetch("/api/conversation/signed-url", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          agentId: persona.agentId,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        if (response.status === 401) {
-          alert("Debes iniciar sesión para usar esta función");
-          return;
-        }
-        if (response.status === 403) {
-          alert("Necesitas una suscripción premium activa");
-          setShowPaywall(true);
-          return;
-        }
-        throw new Error(error.error || "Failed to get signed URL");
-      }
-
-      const { signedUrl } = await response.json();
-
       await conversation.startSession({
-        signedUrl,
+        agentId: persona.agentId,
       });
     } catch (error) {
       console.error("Error starting conversation:", error);
