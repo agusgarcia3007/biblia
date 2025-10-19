@@ -6,17 +6,23 @@ import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { PersonaSelect } from '@/components/persona-select'
+import { SaintPicker } from '@/components/saint-picker'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
-import { Send, BookMarked, Loader2, Home, Copy, Bookmark } from 'lucide-react'
+import { Send, BookMarked, Loader2, Home, Copy, Bookmark, ChevronDown } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { DEFAULT_PERSONA_KEY } from '@/lib/personas'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 
 export default function ChatPage() {
   const router = useRouter()
   const [personaKey, setPersonaKey] = useState(DEFAULT_PERSONA_KEY)
   const [input, setInput] = useState('')
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const { messages, sendMessage, status, error } = useChat({
@@ -93,21 +99,8 @@ export default function ChatPage() {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6 max-w-4xl h-[calc(100vh-80px)] flex flex-col">
-        {/* Persona Selector */}
-        <Card className="mb-4">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Estilo de respuesta</CardTitle>
-            <CardDescription className="text-sm">
-              Selecciona el estilo de las respuestas según la persona de un santo
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <PersonaSelect value={personaKey} onValueChange={setPersonaKey} label="" />
-          </CardContent>
-        </Card>
-
         {/* Messages Area */}
-        <Card className="flex-1 flex flex-col overflow-hidden">
+        <Card className="flex-1 flex flex-col overflow-hidden mb-4">
           <ScrollArea className="flex-1 overflow-hidden">
             <div className="p-4">
             {messages.length === 0 ? (
@@ -228,6 +221,42 @@ export default function ChatPage() {
             </p>
           </div>
         </Card>
+
+        {/* Advanced Options */}
+        <Collapsible
+          open={isAdvancedOpen}
+          onOpenChange={setIsAdvancedOpen}
+        >
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-accent/50 transition-colors pb-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base">Opciones avanzadas</CardTitle>
+                    <CardDescription className="text-sm">
+                      Personaliza el estilo de respuesta
+                    </CardDescription>
+                  </div>
+                  <ChevronDown
+                    className={`h-5 w-5 transition-transform ${
+                      isAdvancedOpen ? 'transform rotate-180' : ''
+                    }`}
+                  />
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent>
+                <SaintPicker
+                  value={personaKey}
+                  onValueChange={setPersonaKey}
+                  label="Persona de santo"
+                  description="Selecciona el estilo de las respuestas según la persona de un santo"
+                />
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
       </div>
     </div>
   )
