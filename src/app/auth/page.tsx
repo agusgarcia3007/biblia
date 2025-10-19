@@ -117,10 +117,15 @@ export default function AuthPage() {
     setError(null)
 
     try {
+      // Save redirect path in cookie for OAuth callback
+      if (redirectPath && redirectPath !== '/') {
+        document.cookie = `auth_redirect_path=${redirectPath}; path=/; max-age=600`
+      }
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}${redirectPath || '/'}`,
+          redirectTo: `${window.location.origin}/auth/callback`,
         },
       })
 
