@@ -71,12 +71,30 @@ function TalkPageContent() {
     });
 
     try {
+      // Get signed URL from backend for secure connection
+      const response = await fetch("/api/conversation/signed-url", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          agentId: persona.agentId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to get signed URL");
+      }
+
+      const { signedUrl } = await response.json();
+
       await conversation.startSession({
-        agentId: persona.agentId,
+        signedUrl,
       });
     } catch (error) {
       console.error("Error starting conversation:", error);
-      alert("Error al iniciar la conversación");
+      alert("Error al iniciar la conversación: " + (error instanceof Error ? error.message : "Unknown error"));
     }
   };
 
