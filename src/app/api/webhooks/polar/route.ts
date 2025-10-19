@@ -37,20 +37,28 @@ export async function POST(req: Request) {
 
 async function handleSubscriptionActive(data: {
   id: string
-  customer?: { id: string; email?: string }
+  customer?: {
+    id: string
+    email?: string
+    metadata?: { external_customer_id?: string }
+  }
   metadata?: { user_id?: string }
   status: string
 }) {
   try {
     const supabase = await createClient()
 
-    // Get user_id from metadata or customer
-    const userId = data.metadata?.user_id
+    // Get user_id from customer metadata (external_customer_id) or subscription metadata
+    const userId = data.customer?.metadata?.external_customer_id || data.metadata?.user_id
 
     if (!userId) {
       console.error('No user_id found in subscription webhook')
+      console.error('Customer metadata:', data.customer?.metadata)
+      console.error('Subscription metadata:', data.metadata)
       return
     }
+
+    console.log('Found user_id:', userId)
 
     // Store subscription info in database
     // Using any to bypass type checking for dynamic table operations
@@ -67,9 +75,9 @@ async function handleSubscriptionActive(data: {
 
     if (error) {
       console.error('Error storing subscription:', error)
+    } else {
+      console.log('Subscription activated for user:', userId)
     }
-
-    console.log('Subscription activated for user:', userId)
   } catch (error) {
     console.error('Error handling active subscription:', error)
   }
@@ -77,18 +85,25 @@ async function handleSubscriptionActive(data: {
 
 async function handleSubscriptionInactive(data: {
   id: string
+  customer?: {
+    metadata?: { external_customer_id?: string }
+  }
   metadata?: { user_id?: string }
   status: string
 }) {
   try {
     const supabase = await createClient()
 
-    const userId = data.metadata?.user_id
+    const userId = data.customer?.metadata?.external_customer_id || data.metadata?.user_id
 
     if (!userId) {
       console.error('No user_id found in subscription webhook')
+      console.error('Customer metadata:', data.customer?.metadata)
+      console.error('Subscription metadata:', data.metadata)
       return
     }
+
+    console.log('Found user_id for deactivation:', userId)
 
     // Update subscription status
     // Using any to bypass type checking for dynamic table operations
@@ -102,9 +117,9 @@ async function handleSubscriptionInactive(data: {
 
     if (error) {
       console.error('Error updating subscription:', error)
+    } else {
+      console.log('Subscription deactivated for user:', userId)
     }
-
-    console.log('Subscription deactivated for user:', userId)
   } catch (error) {
     console.error('Error handling inactive subscription:', error)
   }
