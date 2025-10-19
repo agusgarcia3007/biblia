@@ -21,19 +21,30 @@ export default function AuthPage() {
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [redirectPath, setRedirectPath] = useState<string | null>(null)
+  const [defaultTab, setDefaultTab] = useState<string>('signin')
 
   useEffect(() => {
     // Check for redirect parameter in URL
     const params = new URLSearchParams(window.location.search)
     const redirect = params.get('redirect')
+    const tab = params.get('tab')
 
     // Verificar si hay un estado guardado para mostrar mensaje al usuario
     const savedState = restoreSavedState()
 
+    // Set default tab if specified
+    if (tab === 'signup' || tab === 'signin') {
+      setDefaultTab(tab)
+    }
+
     // Priority: URL param > saved state
     if (redirect) {
       setRedirectPath(redirect)
-      setMessage(`Por favor inicia sesión para continuar. Serás redirigido a ${redirect}`)
+      if (tab === 'signup') {
+        setMessage(`Por favor crea una cuenta para continuar. Serás redirigido a ${redirect}`)
+      } else {
+        setMessage(`Por favor inicia sesión para continuar. Serás redirigido a ${redirect}`)
+      }
     } else if (savedState) {
       setRedirectPath(savedState.path)
       setMessage(`Por favor inicia sesión para continuar. Serás redirigido a ${savedState.path}`)
@@ -146,7 +157,7 @@ export default function AuthPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="signin" className="w-full">
+          <Tabs defaultValue={defaultTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Iniciar Sesión</TabsTrigger>
               <TabsTrigger value="signup">Registrarse</TabsTrigger>

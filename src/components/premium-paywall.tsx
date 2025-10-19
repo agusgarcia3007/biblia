@@ -54,7 +54,9 @@ export function PremiumPaywall({ open, onOpenChange, onSuccess }: PremiumPaywall
       if (!isAuthenticated) {
         // Store the intent to subscribe after login
         sessionStorage.setItem('redirectAfterAuth', 'subscribe')
-        router.push('/auth?redirect=/chat')
+        // Redirect to register tab and return to current page after auth
+        const currentPath = window.location.pathname
+        router.push(`/auth?tab=signup&redirect=${currentPath}`)
         return
       }
 
