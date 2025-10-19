@@ -23,9 +23,18 @@ export default function AuthPage() {
   const [redirectPath, setRedirectPath] = useState<string | null>(null)
 
   useEffect(() => {
+    // Check for redirect parameter in URL
+    const params = new URLSearchParams(window.location.search)
+    const redirect = params.get('redirect')
+
     // Verificar si hay un estado guardado para mostrar mensaje al usuario
     const savedState = restoreSavedState()
-    if (savedState) {
+
+    // Priority: URL param > saved state
+    if (redirect) {
+      setRedirectPath(redirect)
+      setMessage(`Por favor inicia sesión para continuar. Serás redirigido a ${redirect}`)
+    } else if (savedState) {
       setRedirectPath(savedState.path)
       setMessage(`Por favor inicia sesión para continuar. Serás redirigido a ${savedState.path}`)
     }
@@ -46,7 +55,21 @@ export default function AuthPage() {
       if (error) throw error
 
       if (data?.user) {
-        setMessage('¡Cuenta creada! Por favor verifica tu correo electrónico.')
+        // For signup, check if email confirmation is required
+        if (data.user.identities && data.user.identities.length > 0) {
+          // User created, check if confirmation needed
+          setMessage('¡Cuenta creada! Revisa tu correo para confirmar tu email.')
+        } else {
+          // No confirmation needed, redirect
+          const shouldSubscribe = sessionStorage.getItem('redirectAfterAuth') === 'subscribe'
+
+          if (shouldSubscribe) {
+            sessionStorage.removeItem('redirectAfterAuth')
+            router.push(redirectPath || '/chat')
+          } else {
+            router.push(redirectPath || '/')
+          }
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Error al crear cuenta')
@@ -70,8 +93,17 @@ export default function AuthPage() {
       if (error) throw error
 
       if (data?.user) {
-        // Redirigir a la ruta guardada o a la home
-        router.push(redirectPath || '/')
+        // Check if user needs to subscribe
+        const shouldSubscribe = sessionStorage.getItem('redirectAfterAuth') === 'subscribe'
+
+        if (shouldSubscribe) {
+          sessionStorage.removeItem('redirectAfterAuth')
+          // Redirect back to the page, which will trigger subscription check
+          router.push(redirectPath || '/chat')
+        } else {
+          // Redirigir a la ruta guardada o a la home
+          router.push(redirectPath || '/')
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Error al iniciar sesión')

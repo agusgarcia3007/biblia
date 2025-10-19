@@ -50,11 +50,11 @@ export function PremiumPaywall({ open, onOpenChange, onSuccess }: PremiumPaywall
     setIsLoading(true)
 
     try {
-      // If not authenticated, redirect to login
+      // If not authenticated, redirect to auth
       if (!isAuthenticated) {
         // Store the intent to subscribe after login
         sessionStorage.setItem('redirectAfterAuth', 'subscribe')
-        router.push('/login?redirect=/chat')
+        router.push('/auth?redirect=/chat')
         return
       }
 
