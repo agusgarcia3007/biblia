@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceRoleClient } from '@/lib/supabase/server'
 
 export async function POST(req: Request) {
   try {
@@ -46,7 +46,7 @@ async function handleSubscriptionActive(data: {
   status: string
 }) {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceRoleClient()
 
     // Get user_id from customer metadata (external_customer_id) or subscription metadata
     const userId = data.customer?.metadata?.external_customer_id || data.metadata?.user_id
@@ -92,7 +92,7 @@ async function handleSubscriptionInactive(data: {
   status: string
 }) {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceRoleClient()
 
     const userId = data.customer?.metadata?.external_customer_id || data.metadata?.user_id
 
