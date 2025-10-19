@@ -1,7 +1,7 @@
 'use client'
 
 import { useConversation } from '@elevenlabs/react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { SaintPicker } from '@/components/saint-picker'
@@ -13,7 +13,7 @@ import { PremiumPaywall } from '@/components/premium-paywall'
 import Confetti from 'react-confetti'
 import { useWindowSize } from '@/hooks/use-window-size'
 
-export default function TalkPage() {
+function TalkPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { width, height } = useWindowSize()
@@ -410,5 +410,30 @@ export default function TalkPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function TalkPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background">
+        <header className="border-b bg-background/95 backdrop-blur">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Phone className="h-6 w-6 text-primary" />
+              <h1 className="text-xl font-bold">Hablar con un Santo</h1>
+            </div>
+          </div>
+        </header>
+        <div className="container mx-auto px-4 py-8 max-w-2xl flex items-center justify-center min-h-[60vh]">
+          <div className="text-center space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+            <p className="text-muted-foreground">Cargando...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <TalkPageContent />
+    </Suspense>
   )
 }
