@@ -54,7 +54,7 @@ function TalkPageContent() {
     },
     onError: (error) => {
       console.error("Conversation error:", error);
-      alert("Error en la conversación: " + error);
+      alert("Error en la conversación: " + error.message);
     },
   });
 
@@ -65,24 +65,9 @@ function TalkPageContent() {
       return;
     }
 
-    // Check premium access first
-    try {
-      const checkResponse = await fetch("/api/subscription/check");
-      if (checkResponse.ok) {
-        const { hasAccess } = await checkResponse.json();
-        if (!hasAccess) {
-          alert("Necesitas una suscripción premium activa");
-          setShowPaywall(true);
-          return;
-        }
-      }
-    } catch (error) {
-      console.error("Error checking subscription:", error);
-    }
-
     track("Voice Conversation Started", {
       personaKey,
-      saintName: persona.display_name,
+      saintName: persona.name,
     });
 
     try {
@@ -105,7 +90,7 @@ function TalkPageContent() {
 
   const handleToggleMute = () => {
     if (conversation.isSpeaking) {
-      conversation.setVolume({ volume: isMuted ? 1 : 0 });
+      conversation.setVolume(isMuted ? 1 : 0);
       setIsMuted(!isMuted);
     }
   };
@@ -170,7 +155,7 @@ function TalkPageContent() {
         conversation.endSession();
       }
     };
-  }, [isConnected, conversation]);
+  }, [isConnected]);
 
   const selectedPersona = getPersonaByKey(personaKey);
 
