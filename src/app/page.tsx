@@ -56,6 +56,7 @@ export default function Home() {
   const [verseOfDay, setVerseOfDay] = useState<VerseOfDay | null>(null);
   const [streak, setStreak] = useState<Streak | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasSubscription, setHasSubscription] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -78,6 +79,13 @@ export default function Home() {
           if (streakData.last_active_date !== today) {
             await fetch("/api/streak", { method: "POST" });
           }
+        }
+
+        // Check subscription status
+        const subRes = await fetch("/api/subscription/check");
+        if (subRes.ok) {
+          const subData = await subRes.json();
+          setHasSubscription(subData.hasAccess);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -297,15 +305,19 @@ export default function Home() {
                     <span>Configuración</span>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <a
-                    href="/api/subscription/portal"
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <CreditCard className="h-4 w-4" />
-                    <span>Gestionar Suscripción</span>
-                  </a>
-                </DropdownMenuItem>
+                {hasSubscription && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <a
+                        href="/api/subscription/portal"
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <CreditCard className="h-4 w-4" />
+                        <span>Gestionar Suscripción</span>
+                      </a>
+                    </DropdownMenuItem>
+                  </>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleLogout}
